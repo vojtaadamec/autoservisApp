@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoservis Profi v5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .text-wrap-fix { white-space: pre-wrap; word-wrap: break-word; word-break: break-word; }
+        .nav-link { cursor: pointer; transition: color 0.2s; }
+        .nav-link:hover { color: #2563eb; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<nav class="bg-white border-b p-4 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto flex gap-2 text-sm font-medium items-center">
+        <span onclick="zobrazSekci('sekce-zakaznici')" class="nav-link text-blue-600 font-bold">Zákazníci</span>
+        <span id="nav-sep-1" class="text-slate-300 hidden">/</span>
+        <span id="nav-zakaznik-name" class="text-slate-500 hidden"></span>
+        <span id="nav-sep-2" class="text-slate-300 hidden">/</span>
+        <span id="nav-auto-name" class="text-slate-900 font-black hidden"></span>
+    </div>
+</nav>
+
+<main class="max-w-4xl mx-auto p-4 pb-20">
+
+    <section id="sekce-zakaznici" class="space-y-4">
+        <h2 class="text-2xl font-black text-slate-800">Moje Dílna</h2>
+        <div id="list-zakaznici" class="grid gap-2"></div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Nový zákazník</p>
+            <div class="space-y-2">
+                <input id="in-z-jmeno" placeholder="Jméno a příjmení" class="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="flex gap-2">
+                    <input id="in-z-tel" placeholder="Telefon" class="flex-grow border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    <button onclick="apiPridatZakaznika()" class="bg-blue-600 text-white px-8 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Uložit</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sekce-detail-zakaznik" class="hidden space-y-4">
+        <h2 id="nadpis-zakaznik" class="text-2xl font-bold text-slate-800"></h2>
+        <div id="list-auta" class="grid gap-3"></div>
+        <div class="bg-slate-200 p-4 rounded-2xl">
+            <p class="text-xs font-bold text-slate-500 mb-2 uppercase">+ Registrovat vozidlo</p>
+            <div class="grid grid-cols-2 gap-2">
+                <input id="in-a-model" placeholder="Značka a model" class="p-2 rounded-lg border">
+                <input id="in-a-spz" placeholder="SPZ" class="p-2 rounded-lg border">
+                <button onclick="apiPridatAuto()" class="col-span-2 bg-slate-800 text-white py-3 rounded-lg font-bold">Přidat do garáže</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="sekce-detail-auto" class="hidden space-y-4">
+        <div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl flex justify-between items-start">
+            <div>
+                <h2 id="nadpis-auto-model" class="text-3xl font-black italic uppercase tracking-tight"></h2>
+                <p id="nadpis-auto-spz" class="text-blue-400 font-mono text-xl"></p>
+            </div>
+            <button onclick="smazAuto()" class="bg-red-900/40 text-red-200 p-2 rounded-lg text-xs hover:bg-red-600">Smazat auto</button>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
+            <div id="list-opravy" class="space-y-4"></div>
+
+            <div class="mt-10 pt-8 border-t border-slate-100">
+                <h4 class="font-bold text-lg mb-4 text-blue-700">Zapsat servis</h4>
+                <div class="space-y-3">
+                    <div class="flex gap-2">
+                        <input id="in-o-datum" type="date" class="border p-3 rounded-xl w-1/2 bg-slate-50">
+                        <input id="in-o-cena" type="number" placeholder="Cena (Kč)" class="border p-3 rounded-xl w-1/2 bg-slate-50 font-bold text-green-700">
+                    </div>
+                    <textarea id="in-o-popis" rows="5" placeholder="Popis práce..." class="w-full border p-4 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    <button onclick="apiPridatOpravu()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition">ULOŽIT ZÁZNAM</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="modal-edit" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl">
+        <h3 class="text-xl font-bold mb-4">Upravit servisní úkon</h3>
+        <input id="edit-o-id" type="hidden">
+        <div class="space-y-3">
+            <input id="edit-o-datum" type="date" class="w-full border p-3 rounded-xl">
+            <input id="edit-o-cena" type="number" class="w-full border p-3 rounded-xl font-bold text-green-700">
+            <textarea id="edit-o-popis" rows="6" class="w-full border p-3 rounded-xl"></textarea>
+            <div class="flex gap-2 pt-2">
+                <button onclick="apiUlozitEditaci()" class="flex-grow bg-blue-600 text-white py-3 rounded-xl font-bold">Uložit změny</button>
+                <button onclick="zavriModal()" class="px-6 bg-slate-100 py-3 rounded-xl font-bold text-slate-500">Zpět</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentZid = null;
+    let currentAid = null;
+
+    // --- OPRAVENÁ FUNKCE NAVIGACE ---
+    function zobrazSekci(id) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+
+        // Logika pro horní lištu (Breadcrumbs)
+        const sep1 = document.getElementById('nav-sep-1');
+        const sep2 = document.getElementById('nav-sep-2');
+        const navZ = document.getElementById('nav-zakaznik-name');
+        const navA = document.getElementById('nav-auto-name');
+
+        if (id === 'sekce-zakaznici') {
+            sep1.classList.add('hidden'); navZ.classList.add('hidden');
+            sep2.classList.add('hidden'); navA.classList.add('hidden');
+        } else if (id === 'sekce-detail-zakaznik') {
+            sep1.classList.remove('hidden'); navZ.classList.remove('hidden');
+            sep2.classList.add('hidden'); navA.classList.add('hidden');
+        } else if (id === 'sekce-detail-auto') {
+            sep1.classList.remove('hidden'); navZ.classList.remove('hidden');
+            sep2.classList.remove('hidden'); navA.classList.remove('hidden');
+        }
+    }
+
+    // --- ZÁKAZNÍCI ---
+    // Najdi ve svém kódu funkci nactiZakazniky() a nahraď generování HTML tímto:
+    async function nactiZakazniky() {
+        const res = await fetch('/api/zakaznici');
+        const data = await res.json();
+        document.getElementById('list-zakaznici').innerHTML = data.map(z => `
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center hover:border-blue-300 transition">
+            <div onclick="otevriZakaznika(${z.id})" class="flex-grow cursor-pointer group">
+                <div class="font-black text-lg text-slate-800 uppercase tracking-tight group-hover:text-blue-600 transition">${z.jmeno}</div>
+                <div class="text-sm font-bold text-slate-600 mt-0.5">${z.telefon || '<span class="text-slate-300 font-normal italic text-xs">Bez telefonu</span>'}</div>
+            </div>
+            <button onclick="smazZakaznika(${z.id})" class="text-slate-300 hover:text-red-500 px-3 py-1 text-xl">✕</button>
+        </div>
+    `).join('');
+        zobrazSekci('sekce-zakaznici');
+    }
+
+    async function otevriZakaznika(id) {
+        currentZid = id;
+        const res = await fetch(`/api/zakaznici/${id}`);
+        const z = await res.json();
+        document.getElementById('nadpis-zakaznik').innerText = z.jmeno;
+        document.getElementById('nav-zakaznik-name').innerText = z.jmeno;
+        document.getElementById('nav-zakaznik-name').onclick = () => otevriZakaznika(id); // Aby se dalo v nav kliknout zpět na jméno
+        document.getElementById('nav-zakaznik-name').className = "nav-link text-slate-500";
+
+        document.getElementById('list-auta').innerHTML = z.auta.map(a => `
+                <div onclick="otevriAuto(${a.id})" class="bg-white p-5 rounded-2xl border-2 border-slate-100 hover:border-blue-400 cursor-pointer shadow-sm flex justify-between items-center group">
+                    <div>
+                        <div class="text-2xl font-black text-slate-800 italic uppercase tracking-tighter">${a.model}</div>
+                        <div class="font-mono text-blue-600 font-bold text-lg tracking-widest">${a.spz}</div>
+                    </div>
+                    <span class="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition">→</span>
+                </div>
+            `).join('');
+        zobrazSekci('sekce-detail-zakaznik');
+    }
+
+    async function otevriAuto(aid) {
+        currentAid = aid;
+        const res = await fetch(`/api/zakaznici/auta/${aid}`);
+        const a = await res.json();
+        document.getElementById('nadpis-auto-model').innerText = a.model;
+        document.getElementById('nadpis-auto-spz').innerText = a.spz;
+        document.getElementById('nav-auto-name').innerText = a.model;
+
+        const opravy = a.navstevy.sort((x,y) => new Date(y.datum) - new Date(x.datum));
+        document.getElementById('list-opravy').innerHTML = opravy.map(n => `
+                <div class="group bg-slate-50 p-4 rounded-2xl border border-slate-100 relative hover:bg-white hover:shadow-md transition cursor-pointer" onclick="otevriEditaci(${n.id}, '${n.datum}', '${n.cena}', \`${n.popisPrace}\`)">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase">${new Date(n.datum).toLocaleDateString('cs-CZ')}</span>
+                        <span class="font-black text-green-700">${n.cena || 0} Kč</span>
+                    </div>
+                    <div class="text-slate-700 text-sm leading-relaxed text-wrap-fix">${n.popisPrace}</div>
+                    <button onclick="event.stopPropagation(); smazOpravu(${n.id})" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-2 transition">✕</button>
+                </div>
+            `).join('') || '<p class="text-slate-400 italic text-center py-4">Žádné záznamy o servisu</p>';
+
+        zobrazSekci('sekce-detail-auto');
+    }
+
+    // --- API AKCE (PŘIDÁNO: Telefon) ---
+    async function apiPridatZakaznika() {
+        const jmeno = document.getElementById('in-z-jmeno').value;
+        const telefon = document.getElementById('in-z-tel').value;
+        if(!jmeno) return;
+        await fetch('/api/zakaznici', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({jmeno, telefon})
+        });
+        document.getElementById('in-z-jmeno').value = '';
+        document.getElementById('in-z-tel').value = '';
+        nactiZakazniky();
+    }
+
+    // --- Ostatní funkce (Editace, Smazání) zůstávají stejné jako ve v4 ---
+    function otevriEditaci(id, datum, cena, popis) {
+        document.getElementById('edit-o-id').value = id;
+        document.getElementById('edit-o-datum').value = datum;
+        document.getElementById('edit-o-cena').value = cena;
+        document.getElementById('edit-o-popis').value = popis;
+        document.getElementById('modal-edit').classList.remove('hidden');
+    }
+    function zavriModal() { document.getElementById('modal-edit').classList.add('hidden'); }
+    async function apiUlozitEditaci() {
+        const id = document.getElementById('edit-o-id').value;
+        const datum = document.getElementById('edit-o-datum').value;
+        const cena = document.getElementById('edit-o-cena').value;
+        const popis = document.getElementById('edit-o-popis').value;
+        await fetch(`/api/zakaznici/navstevy/${id}`, {
+            method: 'PUT', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({datum, cena: parseFloat(cena), popisPrace: popis})
+        });
+        zavriModal(); otevriAuto(currentAid);
+    }
+    async function smazZakaznika(id) { if(confirm('Smazat zákazníka?')) { await fetch(`/api/zakaznici/${id}`, { method: 'DELETE' }); nactiZakazniky(); } }
+    async function smazAuto() { if(confirm('Smazat auto?')) { await fetch(`/api/zakaznici/auta/${currentAid}`, { method: 'DELETE' }); otevriZakaznika(currentZid); } }
+    async function smazOpravu(id) { if(confirm('Smazat záznam?')) { await fetch(`/api/zakaznici/navstevy/${id}`, { method: 'DELETE' }); otevriAuto(currentAid); } }
+    async function apiPridatAuto() {
+        const model = document.getElementById('in-a-model').value;
+        const spz = document.getElementById('in-a-spz').value;
+        await fetch(`/api/zakaznici/${currentZid}/auta`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({model, spz}) });
+        document.getElementById('in-a-model').value = ''; document.getElementById('in-a-spz').value = '';
+        otevriZakaznika(currentZid);
+    }
+    async function apiPridatOpravu() {
+        const datum = document.getElementById('in-o-datum').value;
+        const popis = document.getElementById('in-o-popis').value;
+        const cena = document.getElementById('in-o-cena').value;
+        if(!popis) return alert('Napište popis');
+        await fetch(`/api/zakaznici/auta/${currentAid}/navstevy`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({datum, popisPrace: popis, cena: parseFloat(cena)}) });
+        document.getElementById('in-o-popis').value = ''; document.getElementById('in-o-cena').value = '';
+        otevriAuto(currentAid);
+    }
+
+    nactiZakazniky();
+    document.getElementById('in-o-datum').valueAsDate = new Date();
+</script>
+</body>
+</html>

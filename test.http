@@ -1,0 +1,11 @@
+### Přidání zákazníka
+POST http://localhost:8080/api/zakaznici
+Content-Type: application/json
+
+{
+  "jmeno": "Jan Novák",
+  "telefon": "777 123 456"
+}
+
+### Získání všech zákazníků
+GET http://localhost:8080/api/zakaznici
